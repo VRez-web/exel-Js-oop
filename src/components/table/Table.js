@@ -1,10 +1,10 @@
 import {ExcelComponent} from '../../core/ExcelComponent';
 import {createTable} from './table.template';
 import {resizeHandler} from './table.resize';
-import {isCell, matrix, shouldResize, nextSelector} from './table.functions';
+import {isCell, matrix, nextSelector, shouldResize} from './table.functions';
 import {TableSelection} from './TableSelection';
 import {$} from '../../core/dom';
-import {range} from "../../core/utils";
+import * as actions from '../../store/actions'
 
 export class Table extends ExcelComponent {
     static className = 'excel__table';
@@ -18,7 +18,7 @@ export class Table extends ExcelComponent {
     }
 
     toHTML() {
-        return createTable(20);
+        return createTable(20, this.store.getState());
     }
 
     prepare() {
@@ -38,9 +38,14 @@ export class Table extends ExcelComponent {
         this.$emit('table:select', $cell)
     }
 
+    async resizeTable(event) {
+        const data = await resizeHandler(this.$root, event);
+        this.$dispatch(actions.tableResize(data))
+    }
+
     onMousedown(event) {
         if (shouldResize(event)) {
-            resizeHandler(this.$root, event);
+            this.resizeTable(event)
         } else if (isCell(event)) {
             const $target = $(event.target);
 
@@ -49,7 +54,7 @@ export class Table extends ExcelComponent {
                     .map(id => this.$root.find(`[data-id="${id}"]`))
                 this.selection.selectGroup($cells)
             } else {
-                this.selection.select($target);
+                this.selectCell($target);
             }
         }
     }
